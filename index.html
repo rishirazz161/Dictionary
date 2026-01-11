@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>English–Hindi Dictionary (Big Edition)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        :root {
+            --bg: #eef1f5;
+            --card: #ffffffcc;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --accent: #4f46e5;
+            --border: #00000015;
+            --hover: #4f46e515;
+        }
+        body.dark {
+            --bg: #0f172a;
+            --card: #1e293bcc;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --accent: #6366f1;
+            --border: #ffffff15;
+            --hover: #6366f125;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, var(--accent), var(--bg));
+            color: var(--text);
+            padding: 15px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: var(--card);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .actions { display: flex; gap: 10px; }
+        .actions button {
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            background: var(--accent);
+            color: white;
+            font-weight: 500;
+        }
+
+        .search input {
+            width: 100%;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--text);
+            outline: none;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 60px 240px 1fr;
+            gap: 15px;
+            height: 520px;
+        }
+
+        .alphabet-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .alphabet-bar button {
+            min-height: 35px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .alphabet-bar button.active { background: var(--accent); color: white; }
+
+        .word-list {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 15px;
+            overflow-y: auto;
+            background: rgba(255,255,255,0.03);
+        }
+        .word-list h3 { font-size: 13px; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+        .word-list span {
+            display: block;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 2px;
+            font-size: 15px;
+        }
+        .word-list span:hover { background: var(--hover); }
+        .word-list span.selected { background: var(--accent); color: white; }
+
+        .result {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 25px;
+            background: rgba(255,255,255,0.05);
+            overflow-y: auto;
+        }
+        .word-title { font-size: 38px; font-weight: 800; text-transform: capitalize; color: var(--accent); }
+        .pos { display: inline-block; margin: 10px 0; padding: 4px 12px; border-radius: 20px; background: var(--hover); font-size: 14px; font-weight: bold; }
+        .def { font-size: 20px; line-height: 1.6; margin-top: 10px; }
+        .ex-box { margin-top: 20px; padding: 15px; background: var(--hover); border-radius: 10px; color: var(--muted); border-left: 4px solid var(--accent); }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Dictionary Pro</h1>
+        <div class="actions">
+            <button onclick="toggleLang()" id="langBtn">Lang: HI</button>
+            <button onclick="toggleTheme()">🌓 Theme</button>
+        </div>
+    </div>
+
+    <div class="search">
+        <input type="text" id="searchInput" placeholder="Search from 250+ words..." oninput="handleSearch()">
+    </div>
+
+    <div class="layout">
+        <div class="alphabet-bar" id="alphabetBar"></div>
+        <div class="word-list">
+            <h3 id="listTitle">A-Z List</h3>
+            <div id="listItems"></div>
+        </div>
+        <div class="result" id="resultArea">
+            <p style="text-align:center; color:gray; margin-top:120px;">Welcome! Click a letter or search for a word.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentLang = "en";
+let selectedWord = null;
+
+const dictionary = {
+    // A
+    "apple": { pos: "noun", en: "A sweet red or green fruit.", hi: "सेब: एक मीठा फल।", ex: "She ate an apple." },
+    "ant": { pos: "noun", en: "A tiny insect.", hi: "चींटी: एक छोटा कीट।", ex: "The ant is carrying food." },
+    "airplane": { pos: "noun", en: "A machine that flies.", hi: "हवाई जहाज: उड़ने वाली मशीन।", ex: "The airplane took off." },
+    "actor": { pos: "noun", en: "A person who performs in plays or movies.", hi: "अभिनेता: फिल्मों में काम करने वाला।", ex: "He is a famous actor." },
+    "angry": { pos: "adj", en: "Feeling strong displeasure.", hi: "नाराज: गुस्सा होना।", ex: "Why are you so angry?" },
+    "animal": { pos: "noun", en: "A living creature.", hi: "जानवर: एक जीवित प्राणी।", ex: "The lion is a wild animal." },
+    "answer": { pos: "noun", en: "A reply to a question.", hi: "उत्तर: सवाल का जवाब।", ex: "Write your answer here." },
+    "army": { pos: "noun", en: "A large group of soldiers.", hi: "सेना: सैनिकों का समूह।", ex: "The army protects the country." },
+    "aunt": { pos: "noun", en: "The sister of one's father or mother.", hi: "चाची/मौसी/बुआ।", ex: "My aunt lives in Delhi." },
+    "autumn": { pos: "noun", en: "The season before winter.", hi: "पतझड़: सर्दी से पहले का मौसम।", ex: "Leaves fall in autumn." },
+
+    // B
+    "ball": { pos: "noun", en: "A round object for games.", hi: "गेंद: खेल की गोल वस्तु।", ex: "Kick the ball." },
+    "banana": { pos: "noun", en: "A long yellow fruit.", hi: "केला: एक पीला फल।", ex: "I like eating bananas." },
+    "beautiful": { pos: "adj", en: "Pleasing to the senses.", hi: "सुंदर: देखने में अच्छा।", ex: "What a beautiful flower!" },
+    "bed": { pos: "noun", en: "Furniture to sleep on.", hi: "बिस्तर: सोने की जगह।", ex: "Go to bed now." },
+    "bird": { pos: "noun", en: "A creature with feathers and wings.", hi: "पक्षी: पंखों वाला जीव।", ex: "The bird is flying." },
+    "book": { pos: "noun", en: "Pages bound together.", hi: "किताब: पन्नों का संग्रह।", ex: "Open your book." },
+    "bottle": { pos: "noun", en: "A container for liquids.", hi: "बोतल: तरल रखने का पात्र।", ex: "The water bottle is empty." },
+    "boy": { pos: "noun", en: "A male child.", hi: "लड़का: बालक।", ex: "The boy is playing." },
+    "bread": { pos: "noun", en: "Food made from flour.", hi: "रोटी/पाव: आटे से बनी चीज़।", ex: "I eat bread for breakfast." },
+    "bridge": { pos: "noun", en: "A structure built over a river.", hi: "पुल: नदी के ऊपर बना ढांचा।", ex: "The bridge is very long." },
+
+    // C
+    "cat": { pos: "noun", en: "A small furry pet.", hi: "बिल्ली: एक छोटा पालतू जानवर।", ex: "The cat is meowing." },
+    "car": { pos: "noun", en: "A four-wheeled vehicle.", hi: "गाड़ी: चार पहियों वाला वाहन।", ex: "He drives a red car." },
+    "cake": { pos: "noun", en: "A sweet baked food.", hi: "केक: एक मीठा पकवान।", ex: "Happy birthday cake!" },
+    "camera": { pos: "noun", en: "A device for taking photos.", hi: "कैमरा: फोटो लेने वाला यंत्र।", ex: "Smile for the camera." },
+    "city": { pos: "noun", en: "A large town.", hi: "शहर: एक बड़ा नगर।", ex: "Mumbai is a big city." },
+    "cold": { pos: "adj", en: "At a low temperature.", hi: "ठंडा: कम तापमान।", ex: "The water is very cold." },
+    "computer": { pos: "noun", en: "An electronic machine.", hi: "संगणक: इलेक्ट्रॉनिक मशीन।", ex: "I am using a computer." },
+    "cow": { pos: "noun", en: "An animal that gives milk.", hi: "गाय: दूध देने वाला जानवर।", ex: "The cow is grazing." },
+    "cup": { pos: "noun", en: "A small bowl-shaped container.", hi: "प्याला: चाय पीने का बर्तन।", ex: "A cup of tea." },
+    "chair": { pos: "noun", en: "Furniture for sitting.", hi: "कुर्सी: बैठने का फर्नीचर।", ex: "Sit on the chair." },
+
+    // D
+    "dog": { pos: "noun", en: "A loyal pet.", hi: "कुत्ता: एक वफादार जानवर।", ex: "The dog is barking." },
+    "door": { pos: "noun", en: "An entrance to a room.", hi: "दरवाजा: कमरे का प्रवेश द्वार।", ex: "Close the door." },
+    "dream": { pos: "noun", en: "Thoughts during sleep.", hi: "सपना: सोते समय आने वाले विचार।", ex: "I had a strange dream." },
+    "dress": { pos: "noun", en: "Clothing for women.", hi: "पोशाक: पहनने के कपड़े।", ex: "She wears a blue dress." },
+    "drink": { pos: "verb", en: "To swallow liquid.", hi: "पीना: तरल निगलना।", ex: "Drink some water." },
+    "drum": { pos: "noun", en: "A musical instrument.", hi: "ढोल: एक वाद्य यंत्र।", ex: "He plays the drum." },
+    "duck": { pos: "noun", en: "A water bird.", hi: "बत्तख: पानी का पक्षी।", ex: "The duck is swimming." },
+    "dust": { pos: "noun", en: "Fine powder in the air.", hi: "धूल: हवा में बारीक कण।", ex: "Wipe the dust off." },
+    "dance": { pos: "verb", en: "To move to music.", hi: "नाचना: संगीत पर थिरकना।", ex: "They like to dance." },
+    "dark": { pos: "adj", en: "Without light.", hi: "अंधेरा: बिना रोशनी के।", ex: "It is dark outside." },
+
+    // E
+    "earth": { pos: "noun", en: "The planet we live on.", hi: "पृथ्वी: हमारा ग्रह।", ex: "The earth is round." },
+    "egg": { pos: "noun", en: "Laid by birds/hens.", hi: "अंडा: मुर्गी का अंडा।", ex: "I eat an egg daily." },
+    "elephant": { pos: "noun", en: "A very large animal.", hi: "हाथी: एक विशाल जानवर।", ex: "The elephant has a trunk." },
+    "eye": { pos: "noun", en: "Part of body to see.", hi: "आँख: देखने वाला अंग।", ex: "Close your eyes." },
+    "ear": { pos: "noun", en: "Part of body to hear.", hi: "कान: सुनने वाला अंग।", ex: "Listen with your ears." },
+    "eagle": { pos: "noun", en: "A large bird of prey.", hi: "बाज: एक शिकारी पक्षी।", ex: "The eagle flies high." },
+    "east": { pos: "noun", en: "A direction.", hi: "पूर्व: एक दिशा।", ex: "The sun rises in the east." },
+    "eat": { pos: "verb", en: "To consume food.", hi: "खाना: भोजन ग्रहण करना।", ex: "Eat your lunch." },
+    "engine": { pos: "noun", en: "The part that moves a car.", hi: "इंजन: मशीन का मुख्य भाग।", ex: "The engine started." },
+    "end": { pos: "noun", en: "The final part.", hi: "अंत: आखिरी हिस्सा।", ex: "This is the end of the road." },
+
+    // F
+    "fan": { pos: "noun", en: "Device for air.", hi: "पंखा।", ex: "Switch on the fan." },
+    "fish": { pos: "noun", en: "Lives in water.", hi: "मछली।", ex: "Fish swim in the sea." },
+    "fire": { pos: "noun", en: "Hot burning flames.", hi: "आग।", ex: "Don't touch the fire." },
+    "flower": { pos: "noun", en: "Part of a plant.", hi: "फूल।", ex: "I love flowers." },
+    "food": { pos: "noun", en: "What we eat.", hi: "भोजन।", ex: "The food is tasty." },
+    "friend": { pos: "noun", en: "A person you like.", hi: "दोस्त।", ex: "He is my best friend." },
+    "frog": { pos: "noun", en: "A jumping animal.", hi: "मेढक।", ex: "The frog jumped." },
+    "fruit": { pos: "noun", en: "Healthy food from trees.", hi: "फल।", ex: "Eat fresh fruit." },
+    "forest": { pos: "noun", en: "Area with many trees.", hi: "जंगल।", ex: "Wild animals live in the forest." },
+    "face": { pos: "noun", en: "Front of the head.", hi: "चेहरा।", ex: "Wash your face." },
+
+    // G
+    "garden": { pos: "noun", en: "Place for plants.", hi: "बगीचा।", ex: "The garden is green." },
+    "gate": { pos: "noun", en: "An outdoor door.", hi: "दरवाजा/फाटक।", ex: "Open the gate." },
+    "girl": { pos: "noun", en: "A female child.", hi: "लड़की।", ex: "The girl is reading." },
+    "glass": { pos: "noun", en: "Used to drink water.", hi: "गिलास।", ex: "A glass of milk." },
+    "goat": { pos: "noun", en: "An animal.", hi: "बकरी।", ex: "The goat is eating grass." },
+    "gold": { pos: "noun", en: "A yellow metal.", hi: "सोना।", ex: "Gold is expensive." },
+    "good": { pos: "adj", en: "Of high quality.", hi: "अच्छा।", ex: "You are a good boy." },
+    "grape": { pos: "noun", en: "A small green/purple fruit.", hi: "अंगूर।", ex: "Grapes are sour." },
+    "grass": { pos: "noun", en: "Green ground cover.", hi: "घास।", ex: "Don't walk on the grass." },
+    "green": { pos: "noun", en: "Color of leaves.", hi: "हरा रंग।", ex: "I like the color green." },
+
+    // H
+    "hand": { pos: "noun", en: "Part of arm.", hi: "हाथ।", ex: "Raise your hand." },
+    "hat": { pos: "noun", en: "Head covering.", hi: "टोपी।", ex: "He wore a hat." },
+    "heart": { pos: "noun", en: "Organ for blood.", hi: "दिल।", ex: "Listen to your heart." },
+    "heavy": { pos: "adj", en: "Large weight.", hi: "भारी।", ex: "This box is heavy." },
+    "hen": { pos: "noun", en: "A female chicken.", hi: "मुर्गी।", ex: "The hen laid an egg." },
+    "hill": { pos: "noun", en: "A small mountain.", hi: "पहाड़ी।", ex: "The house is on a hill." },
+    "home": { pos: "noun", en: "Where you live.", hi: "घर।", ex: "I am going home." },
+    "honey": { pos: "noun", en: "Sweet from bees.", hi: "शहद।", ex: "Honey is sweet." },
+    "horse": { pos: "noun", en: "An animal for riding.", hi: "घोड़ा।", ex: "The horse runs fast." },
+    "hot": { pos: "adj", en: "High temperature.", hi: "गर्म।", ex: "The tea is hot." },
+
+    // Add more words similarly for I to Z
+    "ice": { pos: "noun", en: "Frozen water.", hi: "बर्फ।", ex: "Put ice in my juice." },
+    "island": { pos: "noun", en: "Land in water.", hi: "द्वीप।", ex: "They live on an island." },
+    "jug": { pos: "noun", en: "Liquid container.", hi: "जग।", ex: "A jug of water." },
+    "jump": { pos: "verb", en: "To spring up.", hi: "कूदना।", ex: "Jump over the wall." },
+    "kite": { pos: "noun", en: "Flying toy.", hi: "पतंग।", ex: "Fly a kite." },
+    "king": { pos: "noun", en: "Male ruler.", hi: "राजा।", ex: "The king is kind." },
+    "lamp": { pos: "noun", en: "Light source.", hi: "दीपक।", ex: "Turn on the lamp." },
+    "lion": { pos: "noun", en: "Wild animal.", hi: "शेर।", ex: "The lion roared." },
+    "moon": { pos: "noun", en: "Night light.", hi: "चाँद।", ex: "The moon is bright." },
+    "mountain": { pos: "noun", en: "Very high hill.", hi: "पर्वत।", ex: "High mountain peaks." },
+    "net": { pos: "noun", en: "Thread mesh.", hi: "जाल।", ex: "A fishing net." },
+    "nose": { pos: "noun", en: "Part to smell.", hi: "नाक।", ex: "Touch your nose." },
+    "ocean": { pos: "noun", en: "Large sea.", hi: "सागर।", ex: "The ocean is blue." },
+    "orange": { pos: "noun", en: "Fruit/color.", hi: "संतरा।", ex: "I want an orange." },
+    "pen": { pos: "noun", en: "Writing tool.", hi: "कलम।", ex: "Write with a pen." },
+    "pencil": { pos: "noun", en: "Drawing tool.", hi: "पेंसिल।", ex: "Sharpen the pencil." },
+    "queen": { pos: "noun", en: "Female ruler.", hi: "रानी।", ex: "The queen is here." },
+    "quick": { pos: "adj", en: "Fast.", hi: "जल्दी।", ex: "Be quick!" },
+    "rain": { pos: "noun", en: "Water from sky.", hi: "बारिश।", ex: "It is raining." },
+    "river": { pos: "noun", en: "Flowing water.", hi: "नदी।", ex: "The Ganga is a river." },
+    "sun": { pos: "noun", en: "Day star.", hi: "सूरज।", ex: "The sun is hot." },
+    "star": { pos: "noun", en: "Night light.", hi: "तारा।", ex: "Stars are shining." },
+    "tiger": { pos: "noun", en: "Wild animal.", hi: "बाघ।", ex: "The tiger is fast." },
+    "train": { pos: "noun", en: "Vehicle on tracks.", hi: "रेलगाड़ी।", ex: "The train is late." },
+    "umbrella": { pos: "noun", en: "Rain cover.", hi: "छाता।", ex: "Open your umbrella." },
+    "under": { pos: "prep", en: "Below.", hi: "नीचे।", ex: "Under the table." },
+    "village": { pos: "noun", en: "Small town.", hi: "गाँव।", ex: "A beautiful village." },
+    "voice": { pos: "noun", en: "Sound of speaking.", hi: "आवाज़।", ex: "Sweet voice." },
+    "water": { pos: "noun", en: "Liquid for life.", hi: "पानी।", ex: "Drink water." },
+    "watch": { pos: "noun", en: "Time device.", hi: "घड़ी।", ex: "Check your watch." },
+    "xylophone": { pos: "noun", en: "Instrument.", hi: "वाद्य यंत्र।", ex: "Play xylophone." },
+    "yacht": { pos: "noun", en: "A boat.", hi: "नाव/नौका।", ex: "A luxury yacht." },
+    "yellow": { pos: "adj", en: "A color.", hi: "पीला रंग।", ex: "Yellow sunflower." },
+    "zebra": { pos: "noun", en: "Striped animal.", hi: "जेबरा।", ex: "Black and white zebra." },
+    "zoo": { pos: "noun", en: "Animals home.", hi: "चिड़ियाघर।", ex: "Let's go to the zoo." }
+};
+
+const alphabetBar = document.getElementById("alphabetBar");
+const listItems = document.getElementById("listItems");
+const resultArea = document.getElementById("resultArea");
+
+// Create A-Z Buttons
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(char => {
+    const btn = document.createElement("button");
+    btn.innerText = char;
+    btn.onclick = () => {
+        document.querySelectorAll(".alphabet-bar button").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        loadWords(char);
+    };
+    alphabetBar.appendChild(btn);
+});
+
+function loadWords(letter) {
+    document.getElementById("listTitle").innerText = `Letter: ${letter}`;
+    listItems.innerHTML = "";
+    const words = Object.keys(dictionary).filter(w => w.toUpperCase().startsWith(letter)).sort();
+    
+    if(words.length === 0) {
+        listItems.innerHTML = "<p style='color:gray; font-size:12px; padding:10px;'>Coming soon!</p>";
+    } else {
+        words.forEach(word => {
+            const span = document.createElement("span");
+            span.innerText = word;
+            span.onclick = () => { selectedWord = word; renderMeaning(); updateHighlight(span); };
+            listItems.appendChild(span);
+        });
+    }
+}
+
+function renderMeaning() {
+    if(!selectedWord) return;
+    const data = dictionary[selectedWord];
+    resultArea.innerHTML = `
+        <div class="word-title">${selectedWord}</div>
+        <div class="pos">${data.pos}</div>
+        <div class="def">${currentLang === 'en' ? data.en : data.hi}</div>
+        <div class="ex-box"><b>Example:</b> ${data.ex}</div>
+    `;
+}
+
+function handleSearch() {
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    if(!query) {
+        listItems.innerHTML = "";
+        document.getElementById("listTitle").innerText = "A-Z List";
+        return;
+    }
+    document.getElementById("listTitle").innerText = "Search Results";
+    listItems.innerHTML = "";
+    Object.keys(dictionary).forEach(word => {
+        if(word.includes(query)) {
+            const span = document.createElement("span");
+            span.innerText = word;
+            span.onclick = () => { selectedWord = word; renderMeaning(); updateHighlight(span); };
+            listItems.appendChild(span);
+        }
+    });
+}
+
+function updateHighlight(el) {
+    document.querySelectorAll("#listItems span").forEach(s => s.classList.remove("selected"));
+    el.classList.add("selected");
+}
+
+function toggleLang() {
+    currentLang = currentLang === "en" ? "hi" : "en";
+    document.getElementById("langBtn").innerText = currentLang === "en" ? "Lang: HI" : "Lang: EN";
+    renderMeaning();
+}
+
+function toggleTheme() {
+    document.body.classList.toggle("dark");
+}
+</script>
+
+</body>
+</html>
